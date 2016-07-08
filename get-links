@@ -1,0 +1,79 @@
+#!/usr/bin/env ruby
+
+require 'nokogiri'
+require 'open-uri'
+
+#puts "https://www.youtube.com/watch?v=#{id}"
+#puts "http://img.youtube.com/vi/#{id}/hqdefault.jpg"
+
+def time_hash time_string
+  time = time_string.split(':')
+  {
+    hours: time[-3].to_i,
+    minutes: time[-2].to_i,
+    seconds: time[-1].to_i
+  }
+end
+
+def get_seconds time
+  time = time.is_a?(String) ? time_hash(time) : time
+  time[:hours] * 60 * 60 + time[:minutes] * 60 + time[:seconds]
+end
+
+def parse_views views_string
+  views_string.gsub(',','').to_i
+end
+
+def get_video_info video
+  {
+    id: video.attr('data-context-item-id'),
+    title: video.css('.yt-lockup-title a').inner_text,
+    duration: time_hash(video.css('.video-time').inner_text),
+    views: parse_views(video.css('.yt-lockup-meta-info li:last-child').inner_text)
+  }
+end
+
+def get_next_page_sp query_page
+  last_link = query_page.css('.search-pager a:last-child')
+  if last_link.length > 0
+    last_link.attr('href').to_s.match(/sp=([^&]*)/)[1]
+  else
+    nil
+  end
+end
+
+def search(query, pages=40, time_min="16:00", time_max="18:00", sp='', results=[])
+  query_page = Nokogiri::HTML(open("https://www.youtube.com/results?sp=#{sp}&q=#{query}"))
+
+  videos = query_page.css('.yt-lockup-video')
+  next_page_sp = get_next_page_sp(query_page)
+
+  puts "\n\nnext_page_sp"
+  puts next_page_sp
+
+  time_min = time_min.is_a?(String) ? get_seconds(time_min) : time_min
+  time_max = time_max.is_a?(String) ? get_seconds(time_max) : time_max
+
+  videos.each do |video|
+    video_info = get_video_info(video)
+    video_duration = get_seconds(video_info[:duration])
+
+    if time_min <= video_duration && video_duration <= time_max
+      results << get_video_info(video)
+    end
+  end
+
+  if pages > 1 && !next_page_sp.nil?
+    print '.'
+    puts results
+    puts "\n\n======================\n\n"
+    search(query, pages - 1, time_min, time_max, next_page_sp, results)
+  else
+    results
+  end
+end
+
+results = search 'javascript'
+puts "\n"
+puts "final results:"
+puts results
