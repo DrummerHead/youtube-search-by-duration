@@ -2,9 +2,17 @@
 
 require 'nokogiri'
 require 'open-uri'
+require 'yaml'
+require 'json'
 
 #puts "https://www.youtube.com/watch?v=#{id}"
 #puts "http://img.youtube.com/vi/#{id}/hqdefault.jpg"
+
+settings = YAML.load_file('search-config.yml')
+
+puts "\nSearching for videos between #{settings["min_time"]} and #{settings["max_time"]} about:"
+settings["keywords"].each { |keyword| puts "  - #{keyword}"}
+puts "\n"
 
 def time_hash time_string
   time = time_string.split(':')
@@ -24,12 +32,13 @@ def parse_views views_string
   views_string.gsub(',','').to_i
 end
 
-def get_video_info video
+def get_video_info video, keyword
   {
     id: video.attr('data-context-item-id'),
     title: video.css('.yt-lockup-title a').inner_text,
     duration: time_hash(video.css('.video-time').inner_text),
-    views: parse_views(video.css('.yt-lockup-meta-info li:last-child').inner_text)
+    views: parse_views(video.css('.yt-lockup-meta-info li:last-child').inner_text),
+    keyword: keyword
   }
 end
 
@@ -42,38 +51,44 @@ def get_next_page_sp query_page
   end
 end
 
-def search(query, pages=40, time_min="16:00", time_max="18:00", sp='', results=[])
+def search(query, min_time="16:00", max_time="18:00", pages=40, sp='', results=[])
   query_page = Nokogiri::HTML(open("https://www.youtube.com/results?sp=#{sp}&q=#{query}"))
 
-  videos = query_page.css('.yt-lockup-video')
+  videos = query_page.css('.yt-lockup-video:not([data-ad-impressions])')
   next_page_sp = get_next_page_sp(query_page)
 
-  puts "\n\nnext_page_sp"
-  puts next_page_sp
-
-  time_min = time_min.is_a?(String) ? get_seconds(time_min) : time_min
-  time_max = time_max.is_a?(String) ? get_seconds(time_max) : time_max
+  min_time = min_time.is_a?(String) ? get_seconds(min_time) : min_time
+  max_time = max_time.is_a?(String) ? get_seconds(max_time) : max_time
 
   videos.each do |video|
-    video_info = get_video_info(video)
+    video_info = get_video_info(video, query)
     video_duration = get_seconds(video_info[:duration])
 
-    if time_min <= video_duration && video_duration <= time_max
-      results << get_video_info(video)
+    if min_time <= video_duration && video_duration <= max_time
+      results << video_info
     end
   end
 
   if pages > 1 && !next_page_sp.nil?
     print '.'
-    puts results
-    puts "\n\n======================\n\n"
-    search(query, pages - 1, time_min, time_max, next_page_sp, results)
+    search(query, min_time, max_time, pages - 1, next_page_sp, results)
   else
     results
   end
 end
 
-results = search 'javascript'
-puts "\n"
-puts "final results:"
-puts results
+
+final_result = []
+
+settings["keywords"].each do |keyword|
+  print "\nsearching #{keyword}"
+  final_result += search(keyword, settings["min_time"], settings["max_time"], 4)
+end
+
+sorted_final_result = final_result.sort do |a, b|
+  b[:views] <=> a[:views]
+end
+
+puts "\n\nSearch complete!\n\n"
+
+File.write('app/scripts/videos.js', 'window.videos = ' + sorted_final_result.uniq.to_json)
