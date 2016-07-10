@@ -1,3 +1,87 @@
 // bower:scss
 // endbower
 
+html {
+  text-size-adjust: 100%;
+  line-height: 1.2;
+  font-family: sans-serif;
+}
+body {
+  margin: 0;
+}
+ul {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+.clearfix:after {
+  display: table;
+  content: '';
+  clear: both;
+}
+#videos {
+  float: left;
+  padding: .5em;
+  @extend .clearfix;
+}
+.video {
+  float: left;
+  width: 20em;
+  margin: .5em;
+}
+.video-thumb {
+  display: block;
+  position: relative;
+}
+.video-thumb img {
+  display: block;
+}
+.metadata {
+  color: blue;
+}
+.metadata li {
+  color: red;
+  position: absolute;
+  background-color: rgba(#000, .5);
+  color: #fff;
+  padding: .32em .75em;
+  text-shadow: .1em .1em 0 #000;
+}
+.duration {
+  bottom: 0;
+  right: 0;
+}
+.views {
+  top: 0;
+  right: 0;
+}
+.keyword {
+  bottom: 0;
+  left: 0;
+}
+.title {
+  $line-height: 1.2;
+  display: block;
+  margin: .5em 0;
+  font-size: 1.1em;
+  line-height: $line-height;
+  height: #{$line-height * 3}em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-wrap: break-word;
+}
+.title a {
+  display: block;
+}
+
+img {
+  max-width: 100%;
+}
+a {
+  color: #222;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+}
