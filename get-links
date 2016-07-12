@@ -5,9 +5,6 @@ require 'open-uri'
 require 'yaml'
 require 'json'
 
-#puts "https://www.youtube.com/watch?v=#{id}"
-#puts "http://img.youtube.com/vi/#{id}/hqdefault.jpg"
-
 settings = YAML.load_file('search-config.yml')
 
 puts "\nSearching for videos between #{settings["min_time"]} and #{settings["max_time"]} about:"
