@@ -93,4 +93,4 @@ end
 
 puts "\n\nSearch complete!\n\n"
 
-File.write('app/scripts/videos.js', 'window.videos = ' + sorted_final_result.uniq.to_json)
+File.write('app/scripts/videos.js', "/* eslint-disable */\n\nwindow.videos = " + sorted_final_result.uniq.to_json)
